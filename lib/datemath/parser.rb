@@ -5,8 +5,6 @@ module Datemath
     #
     def initialize
       @units = ['y', 'M', 'w', 'd', 'h', 'm', 's', 'ms']
-      @unitsDesc = @units
-      @unitsAsc = @unitsDesc.reverse
     end
 
     # Parses a datemath string to DateTime
@@ -34,10 +32,10 @@ module Datemath
           parse_string = text[0, index]
           math_string = text[(index + 2)..text.length]
         end
-        time = DateTime.parse(parse_string) 
+        time = DateTime.parse(parse_string) rescue nil
       end
 
-      return time if math_string == nil || math_string == ''
+      return time if math_string == nil || math_string == '' || time.nil?
       parse_date_math(math_string, time, round_up)
     end
 
@@ -164,6 +162,8 @@ module Datemath
         date_time.public_send(operation, num.public_send("minutes"))
       when "s"
         date_time.public_send(operation, num.public_send("seconds"))
+      when "ms"
+        date_time.public_send(operation, (num/1000.0).public_send("seconds"))
       end
     end
 
@@ -186,8 +186,8 @@ module Datemath
         date_time.end_of_hour
       when "m"
         date_time.end_of_minute
-      when "s"
-        # TODO Handle s and ms
+      else
+        date_time
       end
     end
 
@@ -210,8 +210,8 @@ module Datemath
         date_time.beginning_of_hour
       when "m"
         date_time.beginning_of_minute
-      when "s"
-        # TODO Handle s and ms
+      else
+        date_time
       end
     end
 

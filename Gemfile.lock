@@ -1,0 +1,51 @@
+PATH
+  remote: .
+  specs:
+    datemath (0.1.0)
+      activesupport
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    activesupport (6.1.6)
+      concurrent-ruby (~> 1.0, >= 1.0.2)
+      i18n (>= 1.6, < 2)
+      minitest (>= 5.1)
+      tzinfo (~> 2.0)
+      zeitwerk (~> 2.3)
+    concurrent-ruby (1.1.10)
+    diff-lcs (1.5.0)
+    i18n (1.10.0)
+      concurrent-ruby (~> 1.0)
+    minitest (5.16.0)
+    rake (10.5.0)
+    rspec (3.11.0)
+      rspec-core (~> 3.11.0)
+      rspec-expectations (~> 3.11.0)
+      rspec-mocks (~> 3.11.0)
+    rspec-core (3.11.0)
+      rspec-support (~> 3.11.0)
+    rspec-expectations (3.11.0)
+      diff-lcs (>= 1.2.0, < 2.0)
+      rspec-support (~> 3.11.0)
+    rspec-mocks (3.11.1)
+      diff-lcs (>= 1.2.0, < 2.0)
+      rspec-support (~> 3.11.0)
+    rspec-support (3.11.0)
+    timecop (0.9.5)
+    tzinfo (2.0.4)
+      concurrent-ruby (~> 1.0)
+    zeitwerk (2.6.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  bundler (~> 1.17)
+  datemath!
+  rake (~> 10.0)
+  rspec (~> 3.0)
+  timecop
+
+BUNDLED WITH
+   1.17.2

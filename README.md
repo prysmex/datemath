@@ -1,8 +1,6 @@
 # Datemath
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/datemath`. To experiment with that code, run `bin/console` for an interactive prompt.
-
-TODO: Delete this and the text above, and describe your gem
+Elasticsearch's date parser for Ruby
 
 ## Installation
 
@@ -26,12 +24,41 @@ Datemath uses Elasticsearch's date parser to handle date expressions.
 
 Here are a few examples: 
 
-Current date time: `Datemath::Parser.new.parse("now")`
-Specific date time: `Datemath::Parser.new.parse("2015-05-05T00:00:00")`
-Complex expression: `Datemath::Parser.new.parse("now+1d")`
-Multiple operations: `Datemath::Parser.new.parse("now+1d-1m")`
-Rounding: `Datemath::Parser.new.parse("now+1d-1m/d")`
-Anchoring dates: `Datemath::Parser.new.parse("2015-05-05T00:00:00||+1d-1m")`
+Current date time: 
+
+```ruby
+Datemath::Parser.new.parse("now")
+```
+
+Specific date time: 
+
+```ruby
+Datemath::Parser.new.parse("2015-05-05T00:00:00")
+```
+
+Complex expression: 
+
+```ruby
+Datemath::Parser.new.parse("now+1d")
+```
+
+Multiple operations: 
+
+```ruby
+Datemath::Parser.new.parse("now+1d-1m")
+```
+
+Rounding: 
+
+```ruby
+Datemath::Parser.new.parse("now+1d-1m/d")
+```
+
+Anchoring dates:
+
+```ruby
+Datemath::Parser.new.parse("2015-05-05T00:00:00||+1d-1m")
+```
 
 You can see more cases here: [here](https://www.elastic.co/guide/en/elasticsearch/client/net-api/current/date-math-expressions.html)
 

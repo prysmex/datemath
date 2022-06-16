@@ -3,7 +3,8 @@ module Datemath
 
     # Initialize
     #
-    def initialize
+    def initialize(text)
+      @text = text
       @units = ['y', 'M', 'w', 'd', 'h', 'm', 's', 'ms']
     end
 
@@ -12,25 +13,25 @@ module Datemath
     # @param [String] text
     # @param [Boolean] round_up
     # @return [DateTime]
-    def parse(text, round_up = false)
-      return nil unless text
+    def parse(round_up = false)
+      return nil unless @text
 
       time = nil
       math_string = ''
       index = nil
       parse_string = nil
     
-      if (text[0, 3] == 'now') 
+      if (@text[0, 3] == 'now') 
         time = DateTime.now
-        math_string = text['now'.length..text.length]
+        math_string = @text['now'.length..@text.length]
       else
-        index = text.index('||')
+        index = @text.index('||')
         if index.nil?
-          parse_string = text
+          parse_string = @text
           math_string = '' 
         else
-          parse_string = text[0, index]
-          math_string = text[(index + 2)..text.length]
+          parse_string = @text[0, index]
+          math_string = @text[(index + 2)..@text.length]
         end
         time = DateTime.parse(parse_string) rescue nil
       end
@@ -38,6 +39,8 @@ module Datemath
       return time if math_string == nil || math_string == '' || time.nil?
       parse_date_math(math_string, time, round_up)
     end
+
+    private
 
     # Handles math_string to manipulate a given datetime
     #

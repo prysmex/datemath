@@ -27,37 +27,37 @@ Here are a few examples:
 Current date time: 
 
 ```ruby
-Datemath::Parser.new.parse("now")
+Datemath::Parser.new("now").parse
 ```
 
 Specific date time: 
 
 ```ruby
-Datemath::Parser.new.parse("2015-05-05T00:00:00")
+Datemath::Parser.new("2015-05-05T00:00:00").parse
 ```
 
 Complex expression: 
 
 ```ruby
-Datemath::Parser.new.parse("now+1d")
+Datemath::Parser.new("now+1d").parse
 ```
 
 Multiple operations: 
 
 ```ruby
-Datemath::Parser.new.parse("now+1d-1m")
+Datemath::Parser.new("now+1d-1m").parse
 ```
 
 Rounding: 
 
 ```ruby
-Datemath::Parser.new.parse("now+1d-1m/d")
+Datemath::Parser.new("now+1d-1m/d").parse
 ```
 
 Anchoring dates:
 
 ```ruby
-Datemath::Parser.new.parse("2015-05-05T00:00:00||+1d-1m")
+Datemath::Parser.new("2015-05-05T00:00:00||+1d-1m").parse
 ```
 
 You can see more cases here: [here](https://www.elastic.co/guide/en/elasticsearch/client/net-api/current/date-math-expressions.html)

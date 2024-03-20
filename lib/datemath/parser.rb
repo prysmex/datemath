@@ -1,11 +1,88 @@
+# frozen_string_literal: true
+
 module Datemath
   class Parser
 
+    UNITS = %w[y M w d h m s ms].freeze
+
+    class << self
+      # @return [ActiveSupport::Duration]
+      def build_duration(quantity, unit)
+        case unit
+        when 'y'
+          quantity.years
+        when 'M'
+          quantity.months
+        when 'w'
+          quantity.weeks
+        when 'd'
+          quantity.days
+        when 'h'
+          quantity.hours
+        when 'm'
+          quantity.minutes
+        when 's'
+          quantity.seconds
+        when 'ms'
+          quantity.seconds / 1000.0
+        end
+      end
+
+      # Applies end_of_* methods to round up dates
+      #
+      # @param [DateTime] date_time
+      # @param [String] unit
+      # @param [Boolean] up
+      # @return [DateTime]
+      def date_time_round(date_time, unit, up:)
+        method = up ? :end_of : :beginning_of
+
+        case unit
+        when 'y'
+          date_time.public_send(:"#{method}_year")
+        when 'M'
+          date_time.public_send(:"#{method}_month")
+        when 'w'
+          date_time.public_send(:"#{method}_week")
+        when 'd'
+          date_time.public_send(:"#{method}_day")
+        when 'h'
+          date_time.public_send(:"#{method}_hour")
+        when 'm'
+          date_time.public_send(:"#{method}_minute")
+        when 's'
+          if up
+            Time.at(date_time.to_i + BigDecimal('0.999999999')).to_datetime
+          else
+            Time.at(date_time.to_i).to_datetime
+          end
+        when 'ms'
+          with_ms = date_time.to_f.floor(3)
+          if up
+            Time.at(with_ms + BigDecimal('0.000999999')).to_datetime
+          else
+            Time.at(BigDecimal(with_ms.to_s)).to_datetime
+          end
+        else
+          ArgumentError.new("unit must be one of #{UNITS.join(',')}, got #{unit}")
+        end
+      end
+
+      # Evaluates string to integer
+      #
+      # @param [String] str
+      # @return [Boolean]
+      def num?(str)
+        !!Integer(str)
+      rescue ArgumentError, TypeError
+        false
+      end
+    end
+
     # Initialize
     #
-    def initialize(text)
+    def initialize(text = nil)
       @text = text
-      @units = ['y', 'M', 'w', 'd', 'h', 'm', 's', 'ms']
     end
 
     # Parses a datemath string to DateTime
@@ -13,30 +90,33 @@ module Datemath
     # @param [String] text
     # @param [Boolean] round_up
     # @return [DateTime]
-    def parse(round_up = false)
+    def parse(round_up: false)
       return nil unless @text
 
-      time = nil
       math_string = ''
-      index = nil
-      parse_string = nil
-    
-      if (@text[0, 3] == 'now') 
+      time = index = parse_string = nil
+
+      if @text[0, 3] == 'now'
         time = DateTime.now
-        math_string = @text['now'.length..@text.length]
+        math_string = @text[3..@text.length]
       else
         index = @text.index('||')
         if index.nil?
           parse_string = @text
-          math_string = '' 
+          math_string = ''
         else
           parse_string = @text[0, index]
           math_string = @text[(index + 2)..@text.length]
         end
-        time = DateTime.parse(parse_string) rescue nil
+        time = begin
+          DateTime.parse(parse_string)
+        rescue Date::Error
+          nil
+        end
       end
 
-      return time if math_string == nil || math_string == '' || time.nil?
+      return time if math_string.nil? || math_string == '' || time.nil?
+
       parse_date_math(math_string, time, round_up)
     end
 
@@ -44,178 +124,90 @@ module Datemath
 
     # Handles math_string to manipulate a given datetime
     #
-    # @param [String] math_string
+    # @param [String] math_string example: '+1d'
     # @param [DateTime] time
     # @param [Boolean] round_up
     # @return [DateTime]
     def parse_date_math(math_string, time, round_up)
       date_time = time
-      len = math_string.length
+      length = math_string.length
       i = 0
 
-      while i < len do
+      while i < length
         c = math_string[i]
-        i = i + 1
-        type = nil
-        num = nil
-        unit = nil
+        i += 1
 
-        type = if c == '/' 
-          0
-        elsif c == '+'
-          1
-        elsif c == '-' 
-          2
+        type = quantity = unit = nil
+
+        type = case c
+        when '/'
+          :round
+        when '+'
+          :add
+        when '-'
+          :subs
+        else
+          return
         end
 
-        if !is_num?(math_string[i]) 
-          num = 1
-        elsif math_string.length == 2 
-          num = math_string[i]
+        quantity = if !self.class.num?(math_string[i]) # example "+1d-1m/d" assumes ".../1d"
+          1
+        elsif math_string.length == 2
+          math_string[i]
         else
           # Finds the complete number of the operation
           numFrom = i
-          while is_num?(math_string[i]) do
-            i = i + 1
-            break if (i > 10) 
+          while self.class.num?(math_string[i])
+            i += 1
+            if i > 10
+              break # why?
+            end
           end
-          
+
           parsed_number = if numFrom == (i - 1)
             math_string[numFrom]
           else
             math_string[numFrom, i - 1]
           end
 
-          num = Integer(parsed_number, 10)
+          Integer(parsed_number, 10)
         end
 
-        if type == 0
-          if num != 1
-            break
-          end
+        if type == :round && quantity != 1
+          return # why?
         end
 
         unit = math_string[i]
-        i = i + 1
+        return unless UNITS.include?(unit)
+
+        i += 1
 
         # Completes de unit string (like ms)
         j = i
-        while j < len do
+        while j < length
           unit_char = math_string[i]
-          if /[a-z]/i.match?(unit_char)
-            unit += unit_char
-            i = i + 1
-          else 
-            break
-          end
-          j = j + 1
+          break unless /[a-z]/i.match?(unit_char)
+
+          unit += unit_char
+          i += 1
+
+          j += 1
         end
 
-        if @units.index(unit).nil?
-          return date_time
-        else
-          if type == 0
-            if (round_up)
-              date_time = date_time_round_up(date_time, unit)
-            else
-              date_time = date_time_round_down(date_time, unit)
-            end
-          elsif type == 1
-            date_time = date_time_operation(date_time, num, unit, "+")
-          elsif type == 2
-            date_time = date_time_operation(date_time, num, unit, "-")
-          end
+        return date_time unless UNITS.include?(unit)
+
+        case type
+        when :round
+          date_time = self.class.date_time_round(date_time, unit, up: round_up)
+        when :add
+          date_time += self.class.build_duration(quantity, unit)
+        when :subs
+          date_time -= self.class.build_duration(quantity, unit)
         end
 
       end
 
       date_time
-    end
-
-    # Evaluates string to integer
-    #
-    # @param [String] str
-    # @return [Boolean]
-    def is_num?(str)
-      !!Integer(str)
-    rescue ArgumentError, TypeError
-      false
-    end
-
-    # Applies datetime operations o add or substract datetime
-    #
-    # @param [DateTime] date_time
-    # @param [Integer] num
-    # @param [String] unit
-    # @param [String] operation
-    # @return [DateTime]
-    def date_time_operation(date_time, num, unit, operation)
-      case unit
-      when "y"
-        date_time.public_send(operation, num.public_send("years"))
-      when "M"
-        date_time.public_send(operation, num.public_send("months"))
-      when "w"
-        date_time.public_send(operation, num.public_send("weeks"))
-      when "d"
-        date_time.public_send(operation, num.public_send("days"))
-      when "h"
-        date_time.public_send(operation, num.public_send("hours"))
-      when "m"
-        date_time.public_send(operation, num.public_send("minutes"))
-      when "s"
-        date_time.public_send(operation, num.public_send("seconds"))
-      when "ms"
-        date_time.public_send(operation, (num/1000.0).public_send("seconds"))
-      end
-    end
-
-    # Applies end_of_* methods to round up dates
-    #
-    # @param [DateTime] date_time
-    # @param [String] unit
-    # @return [DateTime]
-    def date_time_round_up(date_time, unit)
-      case unit
-      when "y"
-        date_time.end_of_year
-      when "M"
-        date_time.end_of_month
-      when "w"
-        date_time.end_of_week
-      when "d"
-        date_time.end_of_day
-      when "h"
-        date_time.end_of_hour
-      when "m"
-        date_time.end_of_minute
-      else
-        date_time
-      end
-    end
-
-    # Applies beginning_of_* methods to round down dates
-    #
-    # @param [DateTime] date_time
-    # @param [String] unit
-    # @return [DateTime]
-    def date_time_round_down(date_time, unit)
-      case unit
-      when "y"
-        date_time.beginning_of_year
-      when "M"
-        date_time.beginning_of_month
-      when "w"
-        date_time.beginning_of_week
-      when "d"
-        date_time.beginning_of_day
-      when "h"
-        date_time.beginning_of_hour
-      when "m"
-        date_time.beginning_of_minute
-      else
-        date_time
-      end
     end
 
   end

@@ -1,0 +1,77 @@
+# see example at https://gist.github.com/jhass/a5ae80d87f18e53e7b56
+
+# <% unless ENV['BYPASS_RUBOCOP_TODO'] %>
+# inherit_from:
+# <% else %>
+# inherit_from:
+#   - '.rubocop-todo.yml'
+# <% end %>
+
+inherit_from:
+  - .rubocop_todo.yml
+  - .rubocop-rspec.yml
+
+require:
+  - rubocop-rspec
+  - rubocop-rake
+  - rubocop-performance
+
+AllCops:
+  NewCops: enable
+  # TargetRubyVersion: 2.7.8
+  # TargetRailsVersion: 6.1.4
+  # Exclude:
+  #   - 'Gemfile.lock'
+
+Naming/VariableNumber:
+  Enabled: false
+
+Layout/SpaceInsideHashLiteralBraces:
+  Enabled: false
+
+Layout/EmptyLinesAroundModuleBody:
+  EnforcedStyle: empty_lines_special
+  Enabled: false
+
+Layout/TrailingEmptyLines:
+  Enabled: false
+  EnforcedStyle: final_blank_line
+
+Layout/EmptyLinesAroundClassBody:
+  Enabled: false
+
+Style/RaiseArgs:
+  EnforcedStyle: compact
+
+Naming/MethodParameterName:
+  Enabled: false
+
+Naming/VariableName:
+  Enabled: false
+
+Layout/FirstHashElementIndentation:
+  Enabled: false
+
+Layout/CaseIndentation:
+  EnforcedStyle: end
+
+Metrics/ParameterLists:
+  Enabled: false
+
+Style/Lambda:
+  EnforcedStyle: literal
+
+Layout/IndentationWidth:
+  Enabled: false
+
+Layout/EndAlignment:
+  Enabled: false
+
+Layout/ElseAlignment:
+  Enabled: false
+
+Style/TrivialAccessors:
+  Enabled: false
+
+Layout/MultilineMethodCallIndentation:
+  EnforcedStyle: indented

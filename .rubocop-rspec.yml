@@ -1,0 +1,11 @@
+###########################################################
+#################### Rubocop Rspec ########################
+###########################################################
+
+# You can find all configuration options for rubocop-rspec here: https://docs.rubocop.org/rubocop-rspec/cops.html
+
+# RSpec/PendingWithoutReason:
+#   Enabled: false
+
+# RSpec/FilePath:
+#   Enabled: false

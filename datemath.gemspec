@@ -12,7 +12,7 @@ Gem::Specification.new do |spec|
   spec.description   = "Elastic's datemath parser for Ruby"
   # spec.homepage      = "TODO: Put your gem's website or public repo URL here."
   spec.license       = 'MIT'
-  spec.required_ruby_version = '>= 3.1.0'
+  spec.required_ruby_version = '>= 3.4.2'
 
   # spec.metadata['homepage_uri'] = spec.homepage
   # spec.metadata['source_code_uri'] = spec.homepage

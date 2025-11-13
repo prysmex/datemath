@@ -14,7 +14,7 @@ gem 'rspec', '~> 3.13'
 gem 'timecop', '~> 0.9.10'
 
 # rubocop
-gem 'rubocop', '~> 1.76'
-gem 'rubocop-performance', '~> 1.25'
+gem 'rubocop', '~> 1.81'
+gem 'rubocop-performance', '~> 1.26'
 gem 'rubocop-rake', '~> 0.7'
-gem 'rubocop-rspec', '~> 3.6'
+gem 'rubocop-rspec', '~> 3.8'

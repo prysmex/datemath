@@ -139,8 +139,6 @@ module Datemath
         c = math_string[i]
         i += 1
 
-        type = quantity = unit = nil
-
         type = case c
         when '/'
           :round

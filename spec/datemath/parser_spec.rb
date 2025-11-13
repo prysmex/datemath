@@ -2,9 +2,8 @@
 
 # now.iso8601(9)
 
-offset = DateTime.now.formatted_offset
-
 RSpec.describe Datemath::Parser do
+  let(:offset) { DateTime.now.formatted_offset }
   let(:anchor) { "2024-03-20T00:24:33.017468000#{offset}" }
 
   around do |ex|
@@ -20,17 +19,19 @@ RSpec.describe Datemath::Parser do
   end
 
   describe '.build_duration' do
-    multiple = 2
-    values = {
-      'y' => 31_556_952.0,
-      'M' => 2_629_746.0,
-      'w' => 604_800.0,
-      'd' => 86_400.0,
-      'h' => 3600.0,
-      'm' => 60.0,
-      's' => 1.0,
-      'ms' => 0.001
-    }
+    let(:multiple) { 2 }
+    let(:values) do
+      {
+        'y' => 31_556_952.0,
+        'M' => 2_629_746.0,
+        'w' => 604_800.0,
+        'd' => 86_400.0,
+        'h' => 3600.0,
+        'm' => 60.0,
+        's' => 1.0,
+        'ms' => 0.001
+      }
+    end
 
     Datemath::Parser::UNITS.each do |unit|
       it "build_duration for #{unit}" do
@@ -133,16 +134,18 @@ RSpec.describe Datemath::Parser do
     describe 'rounding down' do
       # now.iso8601(9)
 
-      values = {
-        'y' => "2024-01-01T00:00:00.000000000#{offset}",
-        'M' => "2024-03-01T00:00:00.000000000#{offset}",
-        'w' => "2024-03-18T00:00:00.000000000#{offset}",
-        'd' => "2024-03-20T00:00:00.000000000#{offset}",
-        'h' => "2024-03-20T00:00:00.000000000#{offset}",
-        'm' => "2024-03-20T00:24:00.000000000#{offset}",
-        's' => "2024-03-20T00:24:33.000000000#{offset}",
-        'ms' => "2024-03-20T00:24:33.017000000#{offset}"
-      }
+      let(:values) do
+        {
+          'y' => "2024-01-01T00:00:00.000000000#{offset}",
+          'M' => "2024-03-01T00:00:00.000000000#{offset}",
+          'w' => "2024-03-18T00:00:00.000000000#{offset}",
+          'd' => "2024-03-20T00:00:00.000000000#{offset}",
+          'h' => "2024-03-20T00:00:00.000000000#{offset}",
+          'm' => "2024-03-20T00:24:00.000000000#{offset}",
+          's' => "2024-03-20T00:24:33.000000000#{offset}",
+          'ms' => "2024-03-20T00:24:33.017000000#{offset}"
+        }
+      end
 
       Datemath::Parser::UNITS.each do |unit|
         it "rounds down to #{unit}" do
@@ -154,16 +157,18 @@ RSpec.describe Datemath::Parser do
     describe 'rounding up' do
       # now.iso8601(9)
 
-      values = {
-        'y' => "2024-12-31T23:59:59.999999999#{offset}",
-        'M' => "2024-03-31T23:59:59.999999999#{offset}",
-        'w' => "2024-03-24T23:59:59.999999999#{offset}",
-        'd' => "2024-03-20T23:59:59.999999999#{offset}",
-        'h' => "2024-03-20T00:59:59.999999999#{offset}",
-        'm' => "2024-03-20T00:24:59.999999999#{offset}",
-        's' => "2024-03-20T00:24:33.999999999#{offset}",
-        'ms' => "2024-03-20T00:24:33.017999999#{offset}"
-      }
+      let(:values) do
+        {
+          'y' => "2024-12-31T23:59:59.999999999#{offset}",
+          'M' => "2024-03-31T23:59:59.999999999#{offset}",
+          'w' => "2024-03-24T23:59:59.999999999#{offset}",
+          'd' => "2024-03-20T23:59:59.999999999#{offset}",
+          'h' => "2024-03-20T00:59:59.999999999#{offset}",
+          'm' => "2024-03-20T00:24:59.999999999#{offset}",
+          's' => "2024-03-20T00:24:33.999999999#{offset}",
+          'ms' => "2024-03-20T00:24:33.017999999#{offset}"
+        }
+      end
 
       Datemath::Parser::UNITS.each do |unit|
         it "rounds down to #{unit}" do

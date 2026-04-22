@@ -5,7 +5,11 @@ require 'bigdecimal'
 module Datemath
   class Parser
 
+    MAX_LENGTH = 50
+    MAX_DIGITS = 10
     UNITS = %w[y M w d h m s ms].freeze
+
+    class ParseError < ArgumentError; end
 
     class << self
       # @return [ActiveSupport::Duration]
@@ -27,6 +31,8 @@ module Datemath
           quantity.seconds
         when 'ms'
           quantity.seconds / 1000.0
+        else
+          raise ParseError.new "unit must be one of #{UNITS.join(',')}, got #{unit}"
         end
       end
 
@@ -66,7 +72,7 @@ module Datemath
             Time.at(BigDecimal(with_ms.to_s)).to_datetime
           end
         else
-          ArgumentError.new("unit must be one of #{UNITS.join(',')}, got #{unit}")
+          raise ParseError.new("unit must be one of #{UNITS.join(',')}, got #{unit}")
         end
       end
 
@@ -74,10 +80,8 @@ module Datemath
       #
       # @param [String] str
       # @return [Boolean]
-      def num?(str)
-        !!Integer(str)
-      rescue ArgumentError, TypeError
-        false
+      def num?(char)
+        !!char&.match?(/[0-9]/)
       end
     end
 
@@ -91,27 +95,26 @@ module Datemath
     #
     # @param [String] text
     # @param [Boolean] round_up
+    # @param [Boolean] raise_error
     # @return [DateTime]
-    def parse(round_up: false)
-      return nil unless @text
+    def parse(round_up: false, raise_error: false)
+      return unless @text.is_a? String
+      # raise TypeError, "text must be a String, got #{@text.class}" unless @text.is_a?(String)
+      raise ParseError.new("datemath string too long (max #{MAX_LENGTH})") if @text.length > MAX_LENGTH
 
-      math_string = ''
-      time = index = parse_string = nil
-
-      if @text[0, 3] == 'now'
+      if @text.start_with?('now')
         time = DateTime.now
-        math_string = @text[3..@text.length]
+        math_string = @text[3..]
       else
-        index = @text.index('||')
-        if index.nil?
-          parse_string = @text
-          math_string = ''
+        if (index = @text.index('||'))
+          parse_string = @text[0...index]
+          math_string = @text[(index + 2)..]
         else
-          parse_string = @text[0, index]
-          math_string = @text[(index + 2)..@text.length]
+          parse_string = @text
         end
+
         time = begin
-          DateTime.parse(parse_string)
+          DateTime.iso8601(parse_string)
         rescue Date::Error
           nil
         end
@@ -119,7 +122,11 @@ module Datemath
 
       return time if math_string.nil? || math_string == '' || time.nil?
 
-      parse_date_math(math_string, time, round_up)
+      begin
+        parse_date_math(math_string, time, round_up)
+      rescue ParseError => _e
+        raise if raise_error
+      end
     end
 
     private
@@ -136,10 +143,10 @@ module Datemath
       i = 0
 
       while i < length
-        c = math_string[i]
+        char = math_string[i]
         i += 1
 
-        type = case c
+        type = case char
         when '/'
           :round
         when '+'
@@ -147,54 +154,37 @@ module Datemath
         when '-'
           :subs
         else
-          return
+          raise ParseError.new("invalid operator #{char.inspect} at offset #{i - 1}")
         end
 
-        quantity = if !self.class.num?(math_string[i]) # example "+1d-1m/d" assumes ".../1d"
+        # Determine the quantity for the current operation (+, -, /)
+        quantity = if type == :round
+          # Rounding ("/") does NOT allow an explicit number like "/2d"
+          if i < length && self.class.num?(math_string[i])
+            raise ParseError.new('rounding does not accept an explicit quantity')
+          end
+
+          # Rounding always implies quantity = 1 (e.g. "/d" => 1 day)
           1
-        elsif math_string.length == 2
-          math_string[i]
+        elsif self.class.num?(math_string[i]) # If the next character is a digit, we parse a full number (e.g. "+120d")
+          num_from = i # mark where the number starts
+
+          # Advance `i` while we keep seeing digits (consume the full number)
+          i += 1 while i < length && self.class.num?(math_string[i])
+
+          # Enforce a max # of digits to prevent pathological inputs (e.g. large numbers or DoS-style inputs)
+          raise ParseError.new("quantity exceeds max digits (#{MAX_DIGITS})") if (i - num_from) > MAX_DIGITS
+
+          # Convert the substring into an Integer (base 10) e.g. "123" => 123
+          Integer(math_string[num_from...i], 10)
         else
-          # Finds the complete number of the operation
-          numFrom = i
-          while self.class.num?(math_string[i])
-            i += 1
-            if i > 10
-              break # why?
-            end
-          end
-
-          parsed_number = if numFrom == (i - 1)
-            math_string[numFrom]
-          else
-            math_string[numFrom, i - 1]
-          end
-
-          Integer(parsed_number, 10)
+          1 # default quantity is 1 (e.g. "+d" => "+1d")
         end
 
-        if type == :round && quantity != 1
-          return # why?
-        end
+        parsed_unit = parse_unit(math_string, i)
+        raise ParseError.new("missing or invalid unit at offset #{i}") unless parsed_unit
 
-        unit = math_string[i]
-        return unless UNITS.include?(unit)
-
-        i += 1
-
-        # Completes de unit string (like ms)
-        j = i
-        while j < length
-          unit_char = math_string[i]
-          break unless /[a-z]/i.match?(unit_char)
-
-          unit += unit_char
-          i += 1
-
-          j += 1
-        end
-
-        return date_time unless UNITS.include?(unit)
+        unit, i = parsed_unit
 
         case type
         when :round
@@ -204,10 +194,25 @@ module Datemath
         when :subs
           date_time -= self.class.build_duration(quantity, unit)
         end
-
       end
 
       date_time
+    end
+
+    # Reads a unit token, preferring the 2-char `ms` unit before 1-char units.
+    #
+    # @param [String] str
+    # @param [Integer] index
+    # @return [Array<(String, Integer)>, nil]
+    def parse_unit(str, index)
+      if str[index, 2] == 'ms'
+        ['ms', index + 2]
+      else
+        unit = str[index]
+        return unless UNITS.include?(unit)
+
+        [unit, index + 1]
+      end
     end
 
   end
